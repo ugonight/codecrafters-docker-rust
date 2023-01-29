@@ -12,6 +12,7 @@ use tempfile::TempDir;
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 #[cfg(target_os = "linux")]
+#[tokio::main]
 async fn main() -> Result<()> {
     let args: Vec<_> = args().collect();
     let command = &args[3];
