@@ -93,16 +93,17 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
 
     let client = reqwest::Client::new();
 
-    let access_token = client
-        .get(format!(
-        "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{}:pull",
-        image
-    ))
-        .send()
-        .await?
-        .json::<Auth>()
-        .await?
-        .access_token;
+    // let access_token = client
+    //     .get(format!(
+    //     "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{}:pull",
+    //     image
+    // ))
+    //     .send()
+    //     .await?
+    //     .json::<Auth>()
+    //     .await?
+    //     .access_token;
+    let access_token = "";
     println!("{}:{}", image, tag);
 
     let manifest = client
