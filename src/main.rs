@@ -35,7 +35,7 @@ fn run_child(command: &String, command_args: &[String], image: &String) -> Resul
 
     copy_command(command, &temp_dir)?;
     create_dev_null(&temp_dir)?;
-    pull_image(image, &temp_dir.path().to_str().unwrap().to_string());
+    //pull_image(image, &temp_dir.path().to_str().unwrap().to_string());
 
     chroot(temp_dir.path())?;
     // Move working directory to the new root at the chroot dir
