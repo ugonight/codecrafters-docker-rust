@@ -133,9 +133,11 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
             .bytes()
             .await?;
 
+        println!("unpack");
         let tar = GzDecoder::new(Cursor::new(data).reader());
         let mut archive = Archive::new(tar);
         archive.unpack(target_dir)?;
+        println!("success");
     }
 
     Ok(())
