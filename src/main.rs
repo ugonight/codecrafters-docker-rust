@@ -1,9 +1,13 @@
 use anyhow::{Context, Result};
+use flate2::read::GzDecoder;
+use serde::Deserialize;
 use std::env::{args, set_current_dir};
 use std::fs::{copy, create_dir, create_dir_all, set_permissions, File, Permissions};
+use std::io::Write;
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::{chroot, PermissionsExt};
 use std::process::{exit, Command, Stdio};
+use tar::Archive;
 use tempfile::TempDir;
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
@@ -12,8 +16,9 @@ fn main() -> Result<()> {
     let args: Vec<_> = args().collect();
     let command = &args[3];
     let command_args = &args[4..];
+    let image = &args[2];
 
-    let exit_code = run_child(command, command_args)?;
+    let exit_code = run_child(command, command_args, image)?;
     exit(exit_code);
 }
 
@@ -24,19 +29,19 @@ fn main() -> Result<()> {
 }
 
 #[cfg(target_os = "linux")]
-fn run_child(command: &String, command_args: &[String]) -> Result<i32> {
+fn run_child(command: &String, command_args: &[String], image: &String) -> Result<i32> {
     // Need the destructor to run so the directory is removed after use. See https://docs.rs/tempfile/3.3.0/tempfile/struct.TempDir.html#resource-leaking
     let temp_dir = tempfile::tempdir()?;
 
     copy_command(command, &temp_dir)?;
-
     create_dev_null(&temp_dir)?;
+    pull_image(image, &temp_dir.path().to_str().unwrap().to_string());
 
     chroot(temp_dir.path())?;
     // Move working directory to the new root at the chroot dir
     set_current_dir("/")?;
 
-    unsafe{
+    unsafe {
         libc::unshare(libc::CLONE_NEWPID);
     }
 
@@ -77,4 +82,73 @@ fn create_dev_null(temp_dir: &TempDir) -> Result<()> {
     )?;
 
     Ok(())
+}
+
+async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
+    let image_tag: Vec<&str> = image_name.as_str().split(':').collect();
+    let image = image_tag[0];
+    let tag = image_tag[1];
+
+    let client = reqwest::Client::new();
+
+    let access_token = client
+        .get(format!(
+        "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{}:pull",
+        image
+    ))
+        .send()
+        .await?
+        .json::<Auth>()
+        .await?
+        .access_token;
+
+    let manifest = client
+        .get(format!(
+            "https://registry.hub.docker.com/v2/library/{}/manifests/{}",
+            image, tag
+        ))
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header(
+            "Accept",
+            "application/vnd.docker.distribution.manifest.v2+json",
+        )
+        .send()
+        .await?
+        .json::<manifest>()
+        .await?;
+
+    for layer in manifest.layers {
+        let data = client
+            .get(format!(
+                "https://registry.hub.docker.com/v2/library/{}/blobs/{}",
+                image, layer.digest
+            ))
+            .header("Authorization", format!("Bearer {}", access_token))
+            .send()
+            .await?
+            .bytes()
+            .await?;
+
+        let mut file = File::create("tmp.tar.gz").unwrap();
+        file.write_all(&data);
+        file.flush();
+        let tar = GzDecoder::new(file);
+        let mut archive = Archive::new(tar);
+        archive.unpack(target_dir);
+    }
+
+    Ok(())
+}
+
+#[derive(Deserialize)]
+struct Auth {
+    access_token: String,
+}
+#[derive(Deserialize)]
+struct manifest {
+    layers: Vec<layer>,
+}
+#[derive(Deserialize)]
+struct layer {
+    digest: String,
 }
