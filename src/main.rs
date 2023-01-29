@@ -1,9 +1,10 @@
 use anyhow::{Context, Result};
+use bytes::Buf;
 use flate2::read::GzDecoder;
 use serde::Deserialize;
 use std::env::{args, set_current_dir};
 use std::fs::{copy, create_dir, create_dir_all, set_permissions, File, Permissions};
-use std::io::Write;
+use std::io::{Write, Cursor};
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::{chroot, PermissionsExt};
 use std::process::{exit, Command, Stdio};
@@ -132,10 +133,7 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
             .bytes()
             .await?;
 
-        let mut file = File::create("tmp.tar.gz").unwrap();
-        file.write_all(&data)?;
-        file.flush()?;
-        let tar = GzDecoder::new(file);
+        let tar = GzDecoder::new(Cursor::new(data).reader());
         let mut archive = Archive::new(tar);
         archive.unpack(target_dir)?;
     }
