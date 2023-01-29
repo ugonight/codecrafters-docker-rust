@@ -96,8 +96,7 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
 
     let access_token = client
         .get(format!(
-        "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{}:pull",
-        image
+        "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/alpine:pull"
     ))
         .send()
         .await?
