@@ -90,6 +90,7 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
     let image_tag: Vec<&str> = image_name.as_str().split(':').collect();
     let image = image_tag[0];
     let tag = image_tag.get(1).unwrap_or(&"latest");
+    println!("{}:{}", image, tag);
 
     let client = reqwest::Client::new();
 
@@ -103,7 +104,6 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
         .json::<Auth>()
         .await?
         .access_token;
-    println!("{}", access_token);
 
     let manifest = client
         .get(format!(
