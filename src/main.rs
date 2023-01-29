@@ -114,7 +114,7 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
         )
         .send()
         .await?
-        .json::<manifest>()
+        .json::<Manifest>()
         .await?;
 
     for layer in manifest.layers {
@@ -145,10 +145,10 @@ struct Auth {
     access_token: String,
 }
 #[derive(Deserialize)]
-struct manifest {
-    layers: Vec<layer>,
+struct Manifest {
+    layers: Vec<Layer>,
 }
 #[derive(Deserialize)]
-struct layer {
+struct Layer {
     digest: String,
 }
