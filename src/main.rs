@@ -12,13 +12,13 @@ use tempfile::TempDir;
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 #[cfg(target_os = "linux")]
-fn main() -> Result<()> {
+async fn main() -> Result<()> {
     let args: Vec<_> = args().collect();
     let command = &args[3];
     let command_args = &args[4..];
     let image = &args[2];
 
-    let exit_code = run_child(command, command_args, image)?;
+    let exit_code = run_child(command, command_args, image).await?;
     exit(exit_code);
 }
 
