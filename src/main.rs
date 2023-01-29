@@ -29,13 +29,13 @@ fn main() -> Result<()> {
 }
 
 #[cfg(target_os = "linux")]
-fn run_child(command: &String, command_args: &[String], image: &String) -> Result<i32> {
+async fn run_child(command: &String, command_args: &[String], image: &String) -> Result<i32> {
     // Need the destructor to run so the directory is removed after use. See https://docs.rs/tempfile/3.3.0/tempfile/struct.TempDir.html#resource-leaking
     let temp_dir = tempfile::tempdir()?;
 
     copy_command(command, &temp_dir)?;
     create_dev_null(&temp_dir)?;
-    pull_image(image, &temp_dir.path().to_str().unwrap().to_string());
+    pull_image(image, &temp_dir.path().to_str().unwrap().to_string()).await?;
 
     chroot(temp_dir.path())?;
     // Move working directory to the new root at the chroot dir
@@ -60,7 +60,6 @@ fn run_child(command: &String, command_args: &[String], image: &String) -> Resul
 }
 
 fn copy_command(command: &String, temp_dir: &TempDir) -> Result<()> {
-    println!("{}", command);
     // Don't want '/usr/local/bin/docker-explorer' sending us back to the root of the file system.
     // i.e. outside the temp dir we just created. So try to get a relative path
     let command_path_relative = command.trim_start_matches("/");
