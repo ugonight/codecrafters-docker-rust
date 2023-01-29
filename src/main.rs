@@ -130,11 +130,11 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
             .await?;
 
         let mut file = File::create("tmp.tar.gz").unwrap();
-        file.write_all(&data);
-        file.flush();
+        file.write_all(&data)?;
+        file.flush()?;
         let tar = GzDecoder::new(file);
         let mut archive = Archive::new(tar);
-        archive.unpack(target_dir);
+        archive.unpack(target_dir)?;
     }
 
     Ok(())
