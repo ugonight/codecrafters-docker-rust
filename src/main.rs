@@ -90,13 +90,14 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
     let image_tag: Vec<&str> = image_name.as_str().split(':').collect();
     let image = image_tag[0];
     let tag = image_tag.get(1).unwrap_or(&"latest");
-    println!("{}:{}", image, tag);
 
     let client = reqwest::Client::new();
+    println!("{}:{}", image, tag);
 
     let access_token = client
         .get(format!(
-        "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/alpine:pull"
+        "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{}:pull",
+        image
     ))
         .send()
         .await?
