@@ -36,7 +36,13 @@ async fn run_child(command: &String, command_args: &[String], image: &String) ->
 
     copy_command(command, &temp_dir)?;
     create_dev_null(&temp_dir)?;
-    pull_image(image, &temp_dir.path().to_str().unwrap().to_string()).await?;
+
+    let pwd = std::env::current_dir().unwrap();
+    pull_image(
+        image,
+        &pwd.join(&temp_dir.path()).to_str().unwrap().to_string(),
+    )
+    .await?;
 
     chroot(temp_dir.path())?;
     // Move working directory to the new root at the chroot dir
@@ -86,8 +92,6 @@ fn create_dev_null(temp_dir: &TempDir) -> Result<()> {
 }
 
 async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
-    println!("{}", target_dir);
-
     let image_tag: Vec<&str> = image_name.as_str().split(':').collect();
     let image = image_tag[0];
     let tag = image_tag.get(1).unwrap_or(&"latest");
