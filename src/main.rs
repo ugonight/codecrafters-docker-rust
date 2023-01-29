@@ -60,6 +60,7 @@ fn run_child(command: &String, command_args: &[String], image: &String) -> Resul
 }
 
 fn copy_command(command: &String, temp_dir: &TempDir) -> Result<()> {
+    println!("{}", command);
     // Don't want '/usr/local/bin/docker-explorer' sending us back to the root of the file system.
     // i.e. outside the temp dir we just created. So try to get a relative path
     let command_path_relative = command.trim_start_matches("/");
