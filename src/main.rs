@@ -86,6 +86,8 @@ fn create_dev_null(temp_dir: &TempDir) -> Result<()> {
 }
 
 async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
+    println!("{}", image_name);
+
     let image_tag: Vec<&str> = image_name.as_str().split(':').collect();
     let image = image_tag[0];
     let tag = image_tag[1];
@@ -119,8 +121,6 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
         .await?;
 
     for layer in manifest.layers {
-        println!("{}", layer.mediaType);
-
         let data = client
             .get(format!(
                 "https://registry.hub.docker.com/v2/library/{}/blobs/{}",
