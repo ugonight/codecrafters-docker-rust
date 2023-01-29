@@ -37,6 +37,9 @@ async fn run_child(command: &String, command_args: &[String], image: &String) ->
 
     copy_command(command, &temp_dir)?;
     create_dev_null(&temp_dir)?;
+
+    pull_image(image, &temp_dir.path().to_str().unwrap().to_string()).await?;
+
     chroot(temp_dir.path())?;
     // Move working directory to the new root at the chroot dir
     set_current_dir("/")?;
@@ -44,8 +47,6 @@ async fn run_child(command: &String, command_args: &[String], image: &String) ->
     unsafe {
         libc::unshare(libc::CLONE_NEWPID);
     }
-
-    pull_image(image, &temp_dir.path().to_str().unwrap().to_string()).await?;
 
     let mut child = Command::new(command)
         .args(command_args)
@@ -93,17 +94,16 @@ async fn pull_image(image_name: &String, target_dir: &String) -> Result<()> {
 
     let client = reqwest::Client::new();
 
-    // let access_token = client
-    //     .get(format!(
-    //     "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{}:pull",
-    //     image
-    // ))
-    //     .send()
-    //     .await?
-    //     .json::<Auth>()
-    //     .await?
-    //     .access_token;
-    let access_token = "";
+    let access_token = client
+        .get(format!(
+        "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{}:pull",
+        image
+    ))
+        .send()
+        .await?
+        .json::<Auth>()
+        .await?
+        .access_token;
     println!("{}:{}", image, tag);
 
     let manifest = client
